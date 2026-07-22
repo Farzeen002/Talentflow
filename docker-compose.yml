@@ -1,0 +1,124 @@
+# Shared worker configuration — email_worker and resume_worker use identical
+# env/restart/volume settings; only the subscribed RQ queues differ.
+x-worker-common: &worker-common
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  volumes:
+    - ./backend:/app
+    # Shared local storage root for STORAGE_PROVIDER=local (both workers read/write).
+    # Set LOCAL_STORAGE_ROOT=/data/storage in .env for Docker deployments.
+    # Unused when STORAGE_PROVIDER=gcs.
+    - resume_storage:/data/storage
+  env_file:
+    - ./backend/.env
+  environment:
+    - REDIS_URL=redis://redis:6379/0
+    - MONGODB_URL=mongodb://mongo:27017
+  depends_on:
+    - redis
+    - mongo
+  restart: unless-stopped
+
+services:
+
+  # ── MongoDB ─────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    # container_name: mongo_v2
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: recruitment_db
+    volumes:
+      - mongo_data:/data/db
+
+  # ── Redis ───────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    # container_name: recruitment_redis_v2
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+
+  # ── Backend (FastAPI) ───────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # container_name: recruitment_backend_v2
+
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --ssl-keyfile /certs/localhost-key.pem
+      --ssl-certfile /certs/localhost.pem
+
+    volumes:
+      - ./backend:/app
+      - ./backend/certs:/certs:ro
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      - mongo
+      - redis
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MONGO_URI=mongodb://mongo:27017
+
+  # ── Email Worker (RQ — ingestion queues only) ─────────────
+  email_worker:
+    <<: *worker-common
+    command: rq worker default high_priority low_priority --url redis://redis:6379/0
+
+  # ── Resume Worker (RQ — preprocessing queue only) ───────
+  resume_worker:
+    <<: *worker-common
+    command: rq worker resume-preprocessing --url redis://redis:6379/0
+
+  # ── JD Analysis Worker (RQ — dedicated queue) ───────────
+  jd_worker:
+    <<: *worker-common
+    command: rq worker jd-analysis --url redis://redis:6379/0
+
+  # ── ATS Scoring Worker (RQ — dedicated queue) ────────────
+  ats_worker:
+    <<: *worker-common
+    command: rq worker ats-scoring --url redis://redis:6379/0
+
+  # ── Frontend (Vite React) ───────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    # container_name: recruitment_frontend_v2
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    env_file:
+      - ./frontend/.env
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# ── Volumes ───────────────────────────────────────────────
+volumes:
+  mongo_data:
+  redis_data:
+  resume_storage:
+  frontend_node_modules:

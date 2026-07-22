@@ -1,0 +1,27 @@
+%% TalentFlow — Simplified Azure architecture (PNG / slides)
+%% Export: mmdc -i PRODUCTION_ARCHITECTURE_SIMPLE.mmd -o PRODUCTION_ARCHITECTURE_SIMPLE.png -w 1920 -H 1080 -b white
+
+flowchart TB
+    U["① Users<br/>HTTPS clients"]
+
+    subgraph AZ["Microsoft Azure"]
+        subgraph SRV["② VM Standard_D4s_v5 · Ubuntu 22.04"]
+            NGX["③ Nginx (host)<br/>SSL/TLS · :443<br/>ats.company.com · api.company.com"]
+
+            subgraph DC["④ Docker Compose"]
+                FE["⑤ React.js<br/>Frontend"]
+                API["⑥ Python FastAPI<br/>REST API"]
+                WRK["⑦ Background worker(s)"]
+                MONGO["⑧ MongoDB<br/>:27017 internal"]
+                REDIS["⑨ Redis<br/>:6379 internal"]
+            end
+        end
+    end
+
+    U -->|"HTTPS"| NGX
+    NGX -->|"ats.company.com"| FE
+    NGX -->|"api.company.com"| API
+    API --> MONGO
+    API --> REDIS
+    WRK --> REDIS
+    WRK --> MONGO

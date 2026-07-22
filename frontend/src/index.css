@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* TalentFlow brand — dark navy chrome */
+    --tf-navy: #14344a;
+    --tf-navy-deep: #0f2433;
+    --tf-navy-mid: #1c3d56;
+    --tf-navy-soft: #243f57;
+    --tf-accent: #10b981;
+    --tf-sidebar: #14344a;
+    --tf-sidebar-fg: #ffffff;
+    --tf-sidebar-muted: #94a8b8;
+    --tf-sidebar-accent: #1e455e;
+    --tf-sidebar-border: rgba(255, 255, 255, 0.08);
+
+    --background: 210 20% 97%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --border: 214 20% 90%;
+    --muted-foreground: 215 12% 47%;
+    --primary: 201 57% 18%;
+    --destructive: 0 72% 51%;
+  }
+
+  body {
+    @apply bg-[#f3f5f8] text-slate-900 antialiased;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bg-sidebar {
+    background-color: var(--tf-sidebar);
+  }
+  .bg-sidebar-accent {
+    background-color: var(--tf-sidebar-accent);
+  }
+  .text-sidebar-foreground {
+    color: var(--tf-sidebar-fg);
+  }
+  .text-sidebar-accent-foreground {
+    color: #ffffff;
+  }
+  .border-sidebar-border {
+    border-color: var(--tf-sidebar-border);
+  }
+  .bg-gradient-primary {
+    background: linear-gradient(145deg, #ffffff 0%, #e8eef2 100%);
+  }
+  .bg-gradient-subtle {
+    background: #f3f5f8;
+  }
+  .shadow-glow {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+  .bg-card {
+    background-color: #ffffff;
+  }
+  .text-foreground {
+    color: #0f172a;
+  }
+  .text-muted-foreground {
+    color: #64748b;
+  }
+  .border-border {
+    border-color: #e2e8f0;
+  }
+  .text-primary {
+    color: var(--tf-navy);
+  }
+  .bg-primary {
+    background-color: var(--tf-navy);
+  }
+  .text-destructive {
+    color: #dc2626;
+  }
+  .hover\:bg-destructive\/5:hover {
+    background-color: rgb(220 38 38 / 0.05);
+  }
+  .hover\:text-destructive:hover {
+    color: #dc2626;
+  }
+
+  /* Brand button used across pages */
+  .btn-brand {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[#14344a] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f2a3c] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}
+
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1023px) {
+  .overscroll-contain {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Login page motion */
+@keyframes login-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes login-float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-3deg);
+  }
+}
+@keyframes login-pulse-line {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+@keyframes login-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.login-float {
+  animation: login-float 5.5s ease-in-out infinite;
+}
+.login-float-delay {
+  animation: login-float 6.2s ease-in-out 0.6s infinite;
+}
+.login-float-card {
+  animation: login-float-slow 7s ease-in-out infinite;
+}
+.login-line {
+  animation: login-pulse-line 3.2s ease-in-out infinite;
+}
+.login-fade-up {
+  animation: login-fade-up 0.7s ease-out both;
+}
+.login-fade-up-delay {
+  animation: login-fade-up 0.75s ease-out 0.12s both;
+}
+.login-fade-up-delay-2 {
+  animation: login-fade-up 0.8s ease-out 0.22s both;
+}
