@@ -1,7 +1,6 @@
 [build]
-  base = "frontend"
-  command = "npm run build:netlify"
-  publish = "dist"
+  command = "npm --prefix frontend ci && npm --prefix frontend run build:netlify"
+  publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "22"
