@@ -117,8 +117,7 @@ def create_app() -> FastAPI:
     # ── CORS ──────────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        # REFACTOR: Allowing all origins is convenient for development but should berestricted in production to the actual frontend domain(s).
-        allow_origins=["*"],          # Tighten in production
+        allow_origins=settings.cors_allow_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -143,6 +142,15 @@ def create_app() -> FastAPI:
             "service": "Recruitment Automation API",
             "environment": settings.APP_ENV,
             "status": "online",
+        }
+
+    @app.get("/health", tags=["Health"], summary="Health check")
+    async def health() -> dict[str, str]:
+        """Dedicated health endpoint for hosting platform probes."""
+        return {
+            "service": "Recruitment Automation API",
+            "environment": settings.APP_ENV,
+            "status": "healthy",
         }
 
     return app

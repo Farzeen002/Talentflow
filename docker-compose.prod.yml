@@ -1,0 +1,130 @@
+# TalentFlow — OCI Always Free / production Compose
+# Usage (on the VM):
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Tuned for VM.Standard.A1.Flex 2 OCPU / 12 GB (Always Free Ampere).
+# Do not publish Mongo/Redis/API ports — only host Nginx should expose 80/443.
+
+x-backend-build: &backend-build
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  env_file:
+    - ./backend/.env
+  environment:
+    REDIS_URL: redis://redis:6379/0
+    MONGODB_URL: mongodb://mongo:27017
+  depends_on:
+    mongo:
+      condition: service_started
+    redis:
+      condition: service_started
+  restart: unless-stopped
+  networks:
+    - talentflow
+
+services:
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: recruitment_db
+    volumes:
+      - mongo_data:/data/db
+    # Cap WiredTiger cache for 12 GB hosts (command args).
+    command:
+      - mongod
+      - --bind_ip_all
+      - --wiredTigerCacheSizeGB
+      - "1"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+    networks:
+      - talentflow
+
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning --maxmemory 200mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - talentflow
+
+  backend:
+    <<: *backend-build
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 1
+    volumes:
+      - resume_storage:/data/storage
+    # Bound to localhost only — host Nginx proxies /api/
+    ports:
+      - "127.0.0.1:8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  # Merged ingestion + resume queues (saves RAM vs 4 separate workers).
+  queue_worker:
+    <<: *backend-build
+    command: >
+      rq worker
+      default high_priority low_priority resume-preprocessing
+      --url redis://redis:6379/0
+    volumes:
+      - resume_storage:/data/storage
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # JD + ATS analysis (LLM-heavy); keep separate so ATS does not starve email ingest.
+  analysis_worker:
+    <<: *backend-build
+    command: >
+      rq worker
+      jd-analysis ats-scoring
+      --url redis://redis:6379/0
+    volumes:
+      - resume_storage:/data/storage
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_BASE_URL: ${VITE_BASE_URL:-/api/v1}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - talentflow
+
+volumes:
+  mongo_data:
+  redis_data:
+  resume_storage:
+
+networks:
+  talentflow:
+    driver: bridge

@@ -1,0 +1,11 @@
+# Root secrets / local deploy artifacts (never commit)
+.env
+.env.*
+!.env.example
+backend/.env.docker
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

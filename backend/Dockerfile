@@ -10,4 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Combined API + RQ workers for free-tier single-process hosting (Render).
+RUN chmod +x /app/start_render.sh
+
+CMD ["/app/start_render.sh"]
