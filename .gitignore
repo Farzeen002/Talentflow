@@ -9,3 +9,15 @@ backend/.env.docker
 Thumbs.db
 .idea/
 .vscode/
+
+# Local Netlify folder
+.netlify
+
+backend/.env.tunnel
+
+
+deploy/render-env-FILL-ME.txt
+
+
+deploy/render-env.secrets.json
+
